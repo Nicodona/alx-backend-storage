@@ -82,3 +82,62 @@ def replay(method: Callable) -> None:
     for i, o in zip(inputs, outputs):
         print("{}(*{}) -> {}".format(name, i.decode('utf-8'),
                                      o.decode('utf-8')))
+
+
+class Cache:
+    """
+    Defines methods to handle redis cache operations
+    """
+    def __init__(self) -> None:
+        """
+        Initialize redis client
+        Attributes:
+            self._redis (redis.Redis): redis client
+        """
+        self._redis = redis.Redis()
+        self._redis.flushdb()
+
+    @count_calls
+    @call_history
+    def store(self, data: Union[str, bytes, int, float]) -> str:
+        """
+        Store data in redis cache
+        Args:
+            data (dict): data to store
+        Returns:
+            str: key
+        """
+        key = str(uuid.uuid4())
+        self._redis.set(key, data)
+        return key
+
+    def get(self, key: str, fn: Optional[Callable] = None)\
+            -> Union[str, bytes, int, float, None]:
+        """
+        Get data from redis cache
+        """
+        data = self._redis.get(key)
+        if data is not None and fn is not None and callable(fn):
+            return fn(data)
+        return data
+
+    def get_str(self, key: str) -> str:
+        """
+        Get data as string from redis cache
+        Args:
+            key (str): key
+        Returns:
+            str: data
+        """
+        data = self.get(key, lambda x: x.decode('utf-8'))
+        return data
+
+    def get_int(self, key: str) -> int:
+        """
+        Get data as integer from redis cache
+        Args:
+            key (str): key
+        Returns:
+            int: data
+        """
+        data = self
